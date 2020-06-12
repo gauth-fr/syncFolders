@@ -1,0 +1,58 @@
+logs:
+    log_directory: '/var/log/perso/syncFolders/logs'
+    log_level: 'debug'
+    log_max_size: 5                                      #log file max size in MB
+    log_max_backup: 7                                    #log max files to keep
+    archive_directory: '/var/log/perso/syncFolders/archives'
+    archive_retention: 7                                 #number of days to keep archives files
+    
+folders:
+- title: 'Sync test mary'
+  server:
+    ip: '1.2.3.4'
+    port: '22'
+    user: 'mary'
+  source: '/home/mary/test'
+  target: '/volume1/test'
+  target_is: 'local'
+  source_postcommand: null
+  target_postcommand: '/home/mary/post_process.sh FILE'
+  notify:
+    recipient:
+    - 'mary_telegram'
+    - 'bob_pushbullet'
+    title_prefix: 'Prefix message'
+    subtitle: 'single'
+    video: 'grouped'
+    other: null
+  delete: false
+- title: 'Sync test bob'
+  server:
+    ip: '5.6.7.8'
+    port: '22123'
+    user: 'bob'
+  source: '/home/bob/files/media/Films'
+  target: '/backup'
+  target_is: 'remote'
+  source_postcommand: null
+  target_postcommand: '/home/bob/post_process.sh FILE'
+  notify:
+    recipient:
+    - 'bob_pushbullet'
+    title_prefix: 'Prefix messsage'
+    subtitle: 'grouped'
+    video: 'single'
+    other: 'none'
+  delete: false
+notifications:
+  video_extensions: ['.mp4','.avi','.mkv','.mov','.webm','.flv','.vob','.ogv','.qt','.asf','.wmv','.mpg','.m4v','.3gp','.3g2']
+  subtitle_extensions: ['.srt','.sub','.sbv']
+  other_extensions: []
+  recipients:
+    bob_pushbullet: 
+      provider: 'pushbullet'
+      api_key: 'o.z0jsDS14bH35zIw1214io5MG42HMTbG'
+    mary_telegram: 
+      provider: 'telegram'
+      recipient_id: '-123456788'
+      bot_id: '1234567890:CDG6QIDKAqKdpzu1qC2PDJpc0a3XE_PSODN'
