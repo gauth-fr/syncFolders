@@ -2,8 +2,21 @@
 syncFolders is python script, based on rsync, which will synchronized a set of folder from/to a server.
 
 ## Table of Contents
+   * [Features](#features)
+   * [How to install](#how-to-install)
+   * [Configuration file : config.yaml](#configuration-file--configyaml)
+      * [Folders configuration](#folders-configuration)
+      * [Notification configuration](#notification-configuration)
+         * [Global notification configuration](#global-notification-configuration)
+         * [PushBullet notification configuration](#pushbullet-notification-configuration)
+         * [Telegram notification configuration](#telegram-notification-configuration)
+   * [FAQ](#faq)
+      * [How to create a Telegram bot?](#how-to-create-a-telegram-bot)
+      * [How to get my ID?](#how-to-get-my-id)
+      * [Can the bot send notifications to a group?](#can-the-bot-send-notifications-to-a-group)
+      * [How can I test if the bot is working correctly?](#how-can-i-test-if-the-bot-is-working-correctly)
+      * [Why the libs are provided instead of a simple requirements.txt?](#why-the-libs-are-provided-instead-of-a-simple-requirementstxt)
 
-[TOC]
 
 ## Features
 - synchronize folders using rsync
