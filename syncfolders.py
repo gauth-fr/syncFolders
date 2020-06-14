@@ -62,7 +62,11 @@ def execute_postcommand(files_list, folder_config):
         if source_command:
             complete_filename="%s/%s" % (folder_config["source"].rsplit('/', 1)[0],file)
             complete_escaped_filename="'%s'" % complete_filename.replace("'","'\"'\"'")
+            
+            escaped_base_dir="'%s'" % folder_config["source"].replace("'","'\"'\"'")
+            
             complete_command=target_command.replace("FILE",complete_escaped_filename)
+            complete_command=complete_command.replace("BASEDIR",escaped_base_dir)
             tabbed_logger.debug("Source command : %s" % complete_command,tab=3)
             try:
                 output=subprocess.check_output(complete_command,stderr=subprocess.STDOUT,shell=True)
@@ -75,7 +79,11 @@ def execute_postcommand(files_list, folder_config):
         if target_command:
             complete_filename="%s/%s" % (folder_config["target"],file)
             complete_escaped_filename="'%s'" % complete_filename.replace("'","'\"'\"'")
+            
+            escaped_base_dir="'%s'" % folder_config["target"].replace("'","'\"'\"'")
+            
             complete_command=target_command.replace("FILE",complete_escaped_filename)
+            complete_command=complete_command.replace("BASEDIR",escaped_base_dir)
             tabbed_logger.debug("Target command : %s" % complete_command,tab=3)
             try:
                 output=subprocess.check_output(complete_command,stderr=subprocess.STDOUT,shell=True)
