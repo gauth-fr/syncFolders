@@ -6,6 +6,7 @@ syncFolders is python script, based on rsync, which will synchronized a set of f
    * [How to install](#how-to-install)
    * [Configuration file : config.yaml](#configuration-file--configyaml)
       * [Folders configuration](#folders-configuration)
+         * [Post-process commands](#post-process-commands)
       * [Notification configuration](#notification-configuration)
          * [Global notification configuration](#global-notification-configuration)
          * [PushBullet notification configuration](#pushbullet-notification-configuration)
