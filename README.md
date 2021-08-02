@@ -6,6 +6,7 @@ syncFolders is python script, based on rsync, which will synchronized a set of f
    * [How to install](#how-to-install)
    * [Configuration file : config.yaml](#configuration-file--configyaml)
       * [Folders configuration](#folders-configuration)
+         * [Post-process commands](#post-process-commands)
       * [Notification configuration](#notification-configuration)
          * [Global notification configuration](#global-notification-configuration)
          * [PushBullet notification configuration](#pushbullet-notification-configuration)
@@ -68,18 +69,25 @@ folders
 | Parameter | Type/Value  | Description  |
 | ------------ | ------------ | ------------ |
 | title  |  string  |  Title of this folder synchronization (mostly cosmetic in the logs) |
-| server.ip |  string (ip or hostname) | IP/Hostname of the server to synchronize to/from  |
+| server.ip |  string | IP/Hostname of the server to synchronize to/from  |
 | server.port | string  |  SSH port of the server |
 | server.user | string  |  User for SSH connection |
 | source | string   | source folder to synchronize  |
 | target  | string  | target folder to synchronize to  |
-| target_is  | string (remote or local)  |  define if the target the local (machine where the script is started) or remote (the defined server)  |
+| target_is  | string |  define if the target the `local` (machine where the script is started) or `remote` (the defined server)  |
+| source_postcommand  | string   | Command to execute on the source for each file   |
+| target_postcommand  | string   | Command to execute on the target for each file   |
 | delete  | bool   | unused for now   |
 |  notify.recipient | array of string  | list of recipient for notification. Each recipient should be defined in the notifications section of the config file  |
 | notify.title_prefix  | string  | Prefix string added to the notification title  |
-| subtitle  (optional)| string (single or grouped) or null| define is the subtitle notifications should be grouped (1 notification for all synced subtitles) or not (1 notification per synced subtitle)  |
-| video  (optional)| string (single or grouped) or null | define is the video notifications should be grouped (1 notification for all synced videos) or not (1 notification per synced video)  |
-| other  (optional)| string (single or grouped) or null | define is the other files (not subtitle or video) notifications should be grouped (1 notification for all files) or not (1 notification per synced file)  |
+| subtitle  (optional)| string or null| define is the subtitle notifications should be `grouped` (1 notification for all synced subtitles) or `single` (1 notification per synced subtitle)  |
+| video  (optional)| string or null | define is the video notifications should be `grouped` (1 notification for all synced videos) or `single` (1 notification per synced video)  |
+| other  (optional)| string or null | define is the other files (not subtitle or video) notifications should be `grouped` (1 notification for all files) or `single` (1 notification per synced file)  |
+#### Post-process commands
+Post-process commands are executed either or the source or the target, for each files.<br/>
+You can use the following placeholders in your command, which will be replaced by the relevant value before execution:
+* `FILE`: Complete file path
+* `BASEDIR`: Where the file has been synchronized. Basically, it's the `source` or `target` path
 
 ### Notification configuration
 As of today, only PushBullet and Telegram are supported for notification.
