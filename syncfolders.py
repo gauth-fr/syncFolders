@@ -1,5 +1,3 @@
-#! /usr/bin/python2.7
-
 import subprocess               #to run an command
 import os                       #various functions related to the OS (path, pid...)
 import tempfile                 #to get temp dir
@@ -41,14 +39,14 @@ def execute_postcommand(files_list, folder_config):
     tabbed_logger.info("Post-processing %i copied files" % len(files_list),tab=1)
     
     source_command=None
-    if "source_postcommand" in folder_config and folder_config["source_postcommand"]:
+    if "source_postcommand" in folder_config and folder_config["source_postcommand"] and isinstance(folder_config["source_postcommand"],str):
         if folder_config["target_is"]=="remote":
             source_command=folder_config["source_postcommand"]
         else:
             source_command="ssh -p %s %s@%s '%s'" % (folder_config["server"]["port"],folder_config["server"]["user"],folder_config["server"]["ip"],folder_config["source_postcommand"])
     
     target_command=None
-    if "target_postcommand" in folder_config and folder_config["target_postcommand"]:
+    if "target_postcommand" in folder_config and folder_config["target_postcommand"] and isinstance(folder_config["target_postcommand"],str):
         if folder_config["target_is"]=="remote":
             target_command="ssh -p %s %s@%s '%s'" % (folder_config["server"]["port"],folder_config["server"]["user"],folder_config["server"]["ip"],folder_config["target_postcommand"])
         else:
@@ -93,20 +91,25 @@ def execute_postcommand(files_list, folder_config):
                 tabbed_logger.error("Target command finished with return code %i" % (e.returncode) ,tab=3)
                 tabbed_logger.debug(e.output ,tab=3)
             
+
+ 
+
     
 def sync_folder(folder_config,notifications_config,log_directory,archive_directory):
     tabbed_logger.info(folder_config["title"],tab=0)
+    
+    
         
     if folder_config["target_is"]=="remote":
         source=folder_config["source"]
-        target="%s@%s:%s" % (folder_config["server"]["user"],folder_config["server"]["ip"],folder_config["target"])
+        target="'%s@%s:%s'" % (folder_config["server"]["user"],folder_config["server"]["ip"],folder_config["target"])
     else:
-        source="%s@%s:%s" % (folder_config["server"]["user"],folder_config["server"]["ip"],folder_config["source"])
+        source="'%s@%s:%s'" % (folder_config["server"]["user"],folder_config["server"]["ip"],folder_config["source"])
         target=folder_config["target"]
     
     tabbed_logger.info("Sync %s --> %s" % (source,target),tab=1)
     
-    command="rsync -avPi --no-perms --out-format='%%i %%n%%L %%l' -e 'ssh -p %s' %s %s" % (folder_config["server"]["port"],
+    command="rsync -avPi --update --no-perms --out-format='%%i %%n%%L %%l' -e 'ssh -p %s' %s %s" % (folder_config["server"]["port"],
                                                                                 source,
                                                                                 target)
     tabbed_logger.debug("%s" % command,tab=1)

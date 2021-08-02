@@ -1,10 +1,14 @@
-import os
 import sys
+import os
+
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), 'modules')))
 import logging
 import requests                 #simple HTTP library
 import loghelper
+import confighelper
 import cgi
+# print("7")
+# sys.stdout.flush()
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +65,12 @@ def send_telegram_notification(bot_id, recipient_id, message):
     try:
         resp=requests.post(url,data=notification)
         #tabbed_logger.debug("%s" % (resp.content),tab=3)
-        if resp.status_code>200:
+        if resp.status_code==401:
+            tabbed_logger.warning("Telegram Bot ID is probably incorrect (HTTP %i)" % (resp.status_code),tab=2)
+        elif resp.status_code==400:
+            content=resp.json()
+            tabbed_logger.warning("Recipient ID is probably incorrect (HTTP %i - %s)" % (resp.status_code,content["description"]),tab=2)
+        elif resp.status_code>200:
             tabbed_logger.warning("An error occured while sending notification : HTTP %i" % (resp.status_code),tab=2)
             
     except Exception as e:
@@ -75,73 +84,79 @@ def send_notification(recipient_config, title,message):
         send_pushbulltet_notification(recipient_config["api_key"],title,message)
     elif recipient_config["provider"] == 'telegram':
         message=cgi.escape(message)
-        message= "<b>%s</b>\n%s" % (title,message)
-        
+        message= "<b>%s</b>\n%s" % (title,message)        
         send_telegram_notification(recipient_config["bot_id"], recipient_config["recipient_id"], message)
+    else:
+        tabbed_logger.warning("*** No recipient list defined in the folder > notify configuration",tab=1)
+
+    
+def get_notifications_titles(notifications_config,folder_notifications_config):
+    titles={
+        'single':'A new FILETYPE has been synced.',
+        'grouped':'New FILETYPEs have been synced.'
+    }
+    if "titles" not in notifications_config or not notifications_config["titles"]:
+        tabbed_logger.warning("*** No notification titles defined in the notifications configuration. Fallback to default.",tab=1)
+    else:
+        if "single" not in notifications_config["titles"] or not notifications_config["titles"]["single"] or not isinstance(notifications_config["titles"]["single"],str):
+            tabbed_logger.warning("*** No valid title for single notifications define in the notifications configuration. Fallback to default!",tab=1)
+        else:
+            titles["single"]=notifications_config["titles"]["single"]
+         
+        if "grouped" not in notifications_config["titles"] or not notifications_config["titles"]["grouped"] or not isinstance(notifications_config["titles"]["grouped"],str):
+            tabbed_logger.warning("*** No valid title for grouped notifications define in the notifications configuration. Fallback to default!",tab=1)
+        else:
+            titles["grouped"]=notifications_config["titles"]["grouped"]
+    
+    if "title_prefix" in folder_notifications_config and folder_notifications_config["title_prefix"] and isinstance(folder_notifications_config["title_prefix"],str):
+        titles["single"]="%s - %s" % (folder_notifications_config["title_prefix"],titles["single"])
+        titles["grouped"]="%s - %s" % (folder_notifications_config["title_prefix"],titles["grouped"])
+            
+    return titles    
 
 def send_notifications(files_list, notifications_config,folder_notifications):
+    if not confighelper.is_folder_notifications_config_valid(folder_notifications):
+        return
+
+    if not confighelper.is_notifications_config_valid(notifications_config):
+        return
+    
+    titles = get_notifications_titles(notifications_config,folder_notifications)
+    
     files_list=[x.split("/")[-1] for x in files_list]
-    videos_list=[ x for x in files_list if os.path.splitext(x)[1] in notifications_config["video_extensions"]]
-    subtitles_list=[ x for x in files_list if os.path.splitext(x)[1] in notifications_config["subtitle_extensions"]]
-    others_list=[ x for x in files_list if x not in subtitles_list and x not in videos_list]
-    #print(others_list)
+    
+    files_list_by_type={}
+    
+    for filetype in notifications_config["filetypes"]:
+        files_list_by_type[filetype]=[ x for x in files_list if os.path.splitext(x)[1] in notifications_config["filetypes"][filetype]]
+    
     for recipient in folder_notifications["recipient"]:
         if recipient in notifications_config["recipients"]:
-            tabbed_logger.debug("Send notifications to %s" % (recipient),tab=1)
             recipient_config=notifications_config["recipients"][recipient]
-            if len(videos_list)>0 and "video" in folder_notifications:
-                title= "New videos synced" 
-                if folder_notifications["title_prefix"]:
-                    title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    
-                if folder_notifications["video"]=="single":
-                    tabbed_logger.info("Send single video notification to recipient %s" % recipient,tab=1)
-                    title= "New video synced" 
-                    if folder_notifications["title_prefix"]:
-                        title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    for video in videos_list:
-                        send_notification(recipient_config,title,video)
-                        
-                elif folder_notifications["video"]=="grouped": 
-                    tabbed_logger.info("Send grouped video notification to recipient %s" % recipient,tab=1)
-                    msg='\n'.join(videos_list)
-                    title= "New videos synced" 
-                    if folder_notifications["title_prefix"]:
-                        title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    send_notification(recipient_config,title,msg)
-        
-            if len(subtitles_list)>0 and "subtitle" in folder_notifications:
-                if folder_notifications["subtitle"]=="single":
-                    tabbed_logger.info("Send single subtitle notification to recipient %s" % recipient,tab=1)
-                    title= "New subtitle synced" 
-                    if folder_notifications["title_prefix"]:
-                        title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    for subtitle in subtitles_list:
-                        send_notification(recipient_config,title,subtitle)
-                        
-                elif folder_notifications["subtitle"]=="grouped": 
-                    tabbed_logger.info("Send grouped subtitles notification to recipient %s" % recipient,tab=1)
-                    title= "New subtitles synced" 
-                    if folder_notifications["title_prefix"]:
-                        title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    msg='\n'.join(subtitles_list)
-                    send_notification(recipient_config,title,msg)
-                    
-            if len(others_list)>0 and "other" in folder_notifications:
-                if folder_notifications["other"]=="single":
-                    tabbed_logger.info("Send single file notification to recipient %s" % recipient,tab=1)
-                    title= "New file synced" 
-                    if folder_notifications["title_prefix"]:
-                        title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    for other in others_list:
-                        send_notification(recipient_config,title,other)
-                        
-                elif folder_notifications["other"]=="grouped": 
-                    tabbed_logger.info("Send grouped files notification to recipient %s" % recipient,tab=1)
-                    title= "New files synced" 
-                    if folder_notifications["title_prefix"]:
-                        title="%s - %s" % (folder_notifications["title_prefix"],title)
-                    msg='\n'.join(others_list)
-                    send_notification(recipient_config,title,msg)
+            if confighelper.is_recipient_config_valid(recipient,recipient_config):
+                tabbed_logger.debug("Send notifications to %s" % (recipient),tab=1)            
+                for filetype_to_notify in folder_notifications["filetypes"]:
+                    tabbed_logger.debug("Process notifications for filetype %s" % (filetype_to_notify),tab=1)
+                    if filetype_to_notify in notifications_config["filetypes"]:
+                        if len(files_list_by_type[filetype_to_notify]):
+                            tabbed_logger.debug("File list for filetype %s - %s" % (filetype_to_notify,' -- '.join(files_list_by_type[filetype_to_notify])),tab=1)
+                            notification_mode=folder_notifications["filetypes"][filetype_to_notify]
+                            if notification_mode in ("single","grouped"):
+                                title=titles[notification_mode].replace("FILETYPE",filetype_to_notify)
+                                
+                                if notification_mode=="single":
+                                    tabbed_logger.info("Send single %s notifications to recipient %s" % (filetype_to_notify,recipient),tab=1)
+                                    for file in files_list_by_type[filetype_to_notify]:
+                                        send_notification(recipient_config,title,file)
+                                elif notification_mode=="grouped": 
+                                    tabbed_logger.info("Send grouped %s notification to recipient %s" % (filetype_to_notify,recipient),tab=1)
+                                    msg='\n'.join(files_list_by_type[filetype_to_notify])
+                                    send_notification(recipient_config,title,msg)
+                            else:
+                                tabbed_logger.warning("Notification mode for filetype %s incorrect. Should be 'single' or 'grouped'" % (filetype_to_notify),tab=1)
+                    else:
+                        tabbed_logger.warning("Can't find filetype %s in notification configuration" % (filetype_to_notify),tab=1)
+            else:
+                tabbed_logger.warning("Recipient %s configuration looks invalid" % (recipient),tab=1)
         else:
-            tabbed_logger.debug("Can't find access token for %s" % (recipient),tab=1)
+            tabbed_logger.warning("Can't find recipient %s in notification configuration" % (recipient),tab=1)

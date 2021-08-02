@@ -10,6 +10,7 @@ import pwd
          
 import loghelper
 import syncfolders
+import confighelper
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), 'modules')))
 
@@ -90,10 +91,15 @@ def main(config):
     loghelper.purge_logs(config["logs"]["archive_directory"])
         
     had_errors=False
-
+    
+    index=0
     for folder_config in config["folders"]:
         try:
-            syncfolders.sync_folder(folder_config,config["notifications"],config["logs"]["log_directory"],config["logs"]["archive_directory"])
+            index=index+1
+            if confighelper.is_folder_config_valid(index,folder_config):
+                syncfolders.sync_folder(folder_config,config["notifications"],config["logs"]["log_directory"],config["logs"]["archive_directory"])
+            else:
+                tabbed_logger.debug("Skip synchronization for Folder Configuration %i"%index)
         except SigTermException as e:
             tabbed_logger.warning("Script as received a termination signal")
             tabbed_logger.warning(e)
